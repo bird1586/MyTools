@@ -1,2 +1,3 @@
 pikepdf
 fitz
+pymupdf
