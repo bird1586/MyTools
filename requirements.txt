@@ -1,3 +1,4 @@
 pikepdf
 pdf2image
 Pillow
+python-poppler
