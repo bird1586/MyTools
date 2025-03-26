@@ -1,8 +1,7 @@
 import streamlit as st
 import pikepdf
 import io
-from pdf2image import convert_from_bytes
-from PIL import Image
+import fitz  # PyMuPDF
 
 def unlock_pdf(pdf_file, password):
     try:
@@ -18,8 +17,12 @@ def unlock_pdf(pdf_file, password):
 
 def pdf_to_images(pdf_file, dpi=200):
     try:
-        pdf_bytes = pdf_file.read()
-        images = convert_from_bytes(pdf_bytes, dpi=dpi)
+        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        images = []
+        for page in doc:
+            pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72))  # Convert to pixels
+            img_bytes = pix.tobytes("png")  # Convert to PNG bytes
+            images.append(img_bytes)
         return images
     except Exception as e:
         return f"An error occurred: {e}"
@@ -52,7 +55,7 @@ if tool == "Unlock PDF":
 elif tool == "PDF to Images":
     st.title("PDF to Images")
     uploaded_file = st.file_uploader("Upload a PDF file", type=["pdf"])
-    dpi = st.slider("DPI (Resolution)", 100, 300, 200)
+    dpi = st.selectbox("Select DPI (Resolution)", [100, 200, 300]) #changed to selectbox
 
     if uploaded_file:
         if st.button("Convert to Images"):
@@ -61,16 +64,13 @@ elif tool == "PDF to Images":
 
             if isinstance(images, list):
                 st.success(f"Converted {len(images)} pages to images!")
-                for i, image in enumerate(images):
-                    st.image(image, caption=f"Page {i+1}")
-                    img_byte_arr = io.BytesIO()
-                    image.save(img_byte_arr, format='PNG')
+                for i, img_bytes in enumerate(images):
+                    st.image(img_bytes, caption=f"Page {i+1}")
                     st.download_button(
                         label=f"Download Page {i+1}",
-                        data=img_byte_arr.getvalue(),
+                        data=img_bytes,
                         file_name=f"page_{i+1}.png",
                         mime="image/png"
                     )
-
             else:
                 st.error(images)
