@@ -1,0 +1,3 @@
+pikepdf
+pdf2image
+Pillow
